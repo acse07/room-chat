@@ -2,14 +2,15 @@ const API_BASE = 'https://inai-col3.fishrungames.com/api'
 
 export type Tokens = { access: string }
 
-async function request(path: string, body: unknown, access?: string): Promise<Record<string, unknown>> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+async function request(path: string, body?: unknown, access?: string): Promise<Record<string, unknown>> {
+  const headers: Record<string, string> = {}
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (access) headers.Authorization = `Bearer ${access}`
 
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'include',
   })
 
@@ -34,5 +35,5 @@ export async function register(username: string, password: string): Promise<Toke
 }
 
 export async function logout(tokens: Tokens): Promise<void> {
-  await request('/logout/', {}, tokens.access)
+  await request('/logout/', undefined, tokens.access)
 }
