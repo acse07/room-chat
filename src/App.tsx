@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { ArrowDown, ArrowUpRight, Check, LogOut, MessageCircle, Paperclip, Radio, Send, Smile, Users } from 'lucide-react'
-import { login, register } from './api'
+import { login, logout as revokeSession, register } from './api'
 import type { Tokens } from './api'
 
 type ChatMessage = { sender: string; text: string; timestamp: number }
@@ -89,14 +89,23 @@ function App() {
     } finally { setLoading(false) }
   }
 
-  function logout() {
+  async function logout() {
+    const activeTokens = tokens
     socketRef.current?.close()
+    setStatus('offline')
+    setError('')
+    if (activeTokens) {
+      try {
+        await revokeSession(activeTokens)
+      } catch (reason) {
+        setError(`Сессия закрыта на этом устройстве, но сервер не подтвердил выход: ${reason instanceof Error ? reason.message : 'ошибка запроса'}`)
+      }
+    }
     localStorage.removeItem('access')
     localStorage.removeItem('refresh')
     setTokens(null)
     setUsername('')
     setMessages([])
-    setStatus('offline')
   }
 
   function sendMessage() {

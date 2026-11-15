@@ -2,10 +2,13 @@ const API_BASE = 'https://inai-col3.fishrungames.com/api'
 
 export type Tokens = { access: string; refresh?: string }
 
-async function request(path: string, body: unknown): Promise<Record<string, unknown>> {
+async function request(path: string, body: unknown, access?: string): Promise<Record<string, unknown>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (access) headers.Authorization = `Bearer ${access}`
+
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   })
 
@@ -18,11 +21,15 @@ async function request(path: string, body: unknown): Promise<Record<string, unkn
 }
 
 export async function login(username: string, password: string): Promise<Tokens> {
-  const data = await request('/token/', { username, password })
+  const data = await request('/login/', { username, password })
   if (typeof data.access !== 'string') throw new Error('Сервер не вернул access токен')
   return { access: data.access, refresh: typeof data.refresh === 'string' ? data.refresh : undefined }
 }
 
 export async function register(username: string, password: string): Promise<void> {
   await request('/register/', { username, password })
+}
+
+export async function logout(tokens: Tokens): Promise<void> {
+  await request('/logout/', tokens.refresh ? { refresh: tokens.refresh } : {}, tokens.access)
 }

@@ -12,8 +12,9 @@ npm run dev
 ## Подключение API
 
 - WebSocket: `wss://inai-col3.fishrungames.com/chat/`
-- Вход: `POST https://inai-col3.fishrungames.com/api/token/` (`{ username, password }`, ответ содержит `access`)
-- Регистрация сейчас настроена как `POST https://inai-col3.fishrungames.com/api/register/` (`{ username, password }`). Если в актуальном Swagger регистрации назначен другой путь или поля, обновите `src/api.ts`.
+- Вход: `POST https://inai-col3.fishrungames.com/api/login/` (`{ username, password }`, ответ содержит `access` и `refresh`)
+- Регистрация: `POST https://inai-col3.fishrungames.com/api/register/` (`{ username, password }`)
+- Выход: `POST https://inai-col3.fishrungames.com/api/logout/` с access токеном в `Authorization` и refresh токеном в теле запроса.
 - При открытии WebSocket клиент первым отправляет `AUTH` с access токеном. Форма отправки доступна только после `AUTH_SUCCESS`. Сообщения отправляются как `CHAT_MESSAGE`.
 
 ## GitHub Pages
