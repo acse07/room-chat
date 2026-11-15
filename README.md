@@ -16,6 +16,7 @@ npm run dev
 - Регистрация: `POST https://inai-col3.fishrungames.com/api/register/` (`{ username, password }`, возвращает `access` и устанавливает refresh cookie)
 - Выход: `POST https://inai-col3.fishrungames.com/api/logout/` с access токеном в `Authorization`; backend удаляет refresh cookie.
 - Для login, register и logout браузер отправляет cookie через `credentials: include`.
+- После перезагрузки сохранённая сессия получает свежий access через `/api/token/refresh/`. Полученные сообщения хранятся локально в браузере (последние 500) и остаются видны после смены аккаунта на этом устройстве. Между разными устройствами история не синхронизируется: отдельного API истории в Swagger нет.
 - При открытии WebSocket клиент первым отправляет `AUTH` с access токеном. Форма отправки доступна только после `AUTH_SUCCESS`. Сообщения отправляются как `CHAT_MESSAGE`.
 
 ## GitHub Pages

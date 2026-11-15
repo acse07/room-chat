@@ -1,26 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { ArrowDown, ArrowUpRight, Check, LogOut, MessageCircle, Paperclip, Radio, Send, Smile, Users } from 'lucide-react'
-import { login, logout as revokeSession, register } from './api'
+import { login, logout as revokeSession, refreshAccess, register } from './api'
 import type { Tokens } from './api'
 
 type ChatMessage = { sender: string; text: string; timestamp: number }
 type SocketStatus = 'connecting' | 'online' | 'offline' | 'error'
 
 const socketUrl = 'wss://inai-col3.fishrungames.com/chat/'
+const historyKey = 'chat-messages'
+const historyLimit = 500
 const savedTokens = (): Tokens | null => {
   const access = localStorage.getItem('access')
   if (!access) return null
   return { access }
 }
-const initialMessages: ChatMessage[] = []
+function savedMessages(): ChatMessage[] {
+  try {
+    const stored = localStorage.getItem(historyKey)
+    if (!stored) return []
+    const messages: unknown = JSON.parse(stored)
+    if (!Array.isArray(messages)) return []
+    return messages.filter((item): item is ChatMessage =>
+      typeof item?.sender === 'string' &&
+      typeof item?.text === 'string' &&
+      typeof item?.timestamp === 'number',
+    ).slice(-historyLimit)
+  } catch {
+    return []
+  }
+}
 
 function App() {
   const [tokens, setTokens] = useState<Tokens | null>(savedTokens)
   const [username, setUsername] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<ChatMessage[]>(savedMessages)
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState<SocketStatus>('connecting')
+  const [checkingSession, setCheckingSession] = useState(() => Boolean(localStorage.getItem('access')))
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,6 +46,30 @@ function App() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!checkingSession) return
+    let cancelled = false
+
+    refreshAccess()
+      .then((nextTokens) => {
+        if (cancelled) return
+        localStorage.setItem('access', nextTokens.access)
+        setTokens(nextTokens)
+      })
+      .catch(() => {
+        if (cancelled) return
+        localStorage.removeItem('access')
+        setTokens(null)
+        setError('Сохранённая сессия истекла. Войдите ещё раз.')
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingSession(false)
+      })
+
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (checkingSession) return
     if (!tokens?.access) {
       setStatus('offline')
       return
@@ -50,7 +91,12 @@ function App() {
       if (packet.type === 'NEW_MESSAGE' && packet.payload) {
         const { sender, text, timestamp } = packet.payload
         if (typeof sender === 'string' && typeof text === 'string' && typeof timestamp === 'number') {
-          setMessages((current) => [...current, { sender, text, timestamp }])
+          setMessages((current) => {
+            if (current.some((message) => message.sender === sender && message.text === text && message.timestamp === timestamp)) return current
+            return [...current, { sender, text, timestamp }]
+              .sort((first, second) => first.timestamp - second.timestamp)
+              .slice(-historyLimit)
+          })
         }
       }
     }
@@ -65,9 +111,21 @@ function App() {
       socket.close()
       socketRef.current = null
     }
-  }, [tokens?.access])
+  }, [tokens?.access, checkingSession])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  useEffect(() => {
+    try { localStorage.setItem(historyKey, JSON.stringify(messages)) } catch { /* storage may be unavailable */ }
+  }, [messages])
+
+  useEffect(() => {
+    const syncMessages = (event: StorageEvent) => {
+      if (event.key === historyKey) setMessages(savedMessages())
+    }
+    window.addEventListener('storage', syncMessages)
+    return () => window.removeEventListener('storage', syncMessages)
+  }, [])
 
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -103,7 +161,6 @@ function App() {
     localStorage.removeItem('access')
     setTokens(null)
     setUsername('')
-    setMessages([])
   }
 
   function sendMessage() {

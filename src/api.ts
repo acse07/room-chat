@@ -37,3 +37,9 @@ export async function register(username: string, password: string): Promise<Toke
 export async function logout(tokens: Tokens): Promise<void> {
   await request('/logout/', undefined, tokens.access)
 }
+
+export async function refreshAccess(): Promise<Tokens> {
+  const data = await request('/token/refresh/')
+  if (typeof data.access !== 'string') throw new Error('Сервер не вернул новый access токен')
+  return { access: data.access }
+}
