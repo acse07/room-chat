@@ -12,9 +12,10 @@ npm run dev
 ## Подключение API
 
 - WebSocket: `wss://inai-col3.fishrungames.com/chat/`
-- Вход: `POST https://inai-col3.fishrungames.com/api/login/` (`{ username, password }`, ответ содержит `access` и `refresh`)
-- Регистрация: `POST https://inai-col3.fishrungames.com/api/register/` (`{ username, password }`)
-- Выход: `POST https://inai-col3.fishrungames.com/api/logout/` с access токеном в `Authorization` и refresh токеном в теле запроса.
+- Вход: `POST https://inai-col3.fishrungames.com/api/login/` (`{ username, password }`, ответ содержит `access`; refresh приходит как HttpOnly cookie)
+- Регистрация: `POST https://inai-col3.fishrungames.com/api/register/` (`{ username, password }`, возвращает `access` и устанавливает refresh cookie)
+- Выход: `POST https://inai-col3.fishrungames.com/api/logout/` с access токеном в `Authorization`; backend удаляет refresh cookie.
+- Для login, register и logout браузер отправляет cookie через `credentials: include`.
 - При открытии WebSocket клиент первым отправляет `AUTH` с access токеном. Форма отправки доступна только после `AUTH_SUCCESS`. Сообщения отправляются как `CHAT_MESSAGE`.
 
 ## GitHub Pages

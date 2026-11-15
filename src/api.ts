@@ -1,6 +1,6 @@
 const API_BASE = 'https://inai-col3.fishrungames.com/api'
 
-export type Tokens = { access: string; refresh?: string }
+export type Tokens = { access: string }
 
 async function request(path: string, body: unknown, access?: string): Promise<Record<string, unknown>> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -10,6 +10,7 @@ async function request(path: string, body: unknown, access?: string): Promise<Re
     method: 'POST',
     headers,
     body: JSON.stringify(body),
+    credentials: 'include',
   })
 
   const data = await response.json().catch(() => ({})) as Record<string, unknown>
@@ -23,13 +24,15 @@ async function request(path: string, body: unknown, access?: string): Promise<Re
 export async function login(username: string, password: string): Promise<Tokens> {
   const data = await request('/login/', { username, password })
   if (typeof data.access !== 'string') throw new Error('Сервер не вернул access токен')
-  return { access: data.access, refresh: typeof data.refresh === 'string' ? data.refresh : undefined }
+  return { access: data.access }
 }
 
-export async function register(username: string, password: string): Promise<void> {
-  await request('/register/', { username, password })
+export async function register(username: string, password: string): Promise<Tokens> {
+  const data = await request('/register/', { username, password })
+  if (typeof data.access !== 'string') throw new Error('Сервер не вернул access токен')
+  return { access: data.access }
 }
 
 export async function logout(tokens: Tokens): Promise<void> {
-  await request('/logout/', tokens.refresh ? { refresh: tokens.refresh } : {}, tokens.access)
+  await request('/logout/', {}, tokens.access)
 }

@@ -11,8 +11,7 @@ const socketUrl = 'wss://inai-col3.fishrungames.com/chat/'
 const savedTokens = (): Tokens | null => {
   const access = localStorage.getItem('access')
   if (!access) return null
-  const refresh = localStorage.getItem('refresh')
-  return { access, refresh: refresh ?? undefined }
+  return { access }
 }
 const initialMessages: ChatMessage[] = []
 
@@ -78,10 +77,10 @@ function App() {
     const user = String(form.get('username') ?? '').trim()
     const password = String(form.get('password') ?? '')
     try {
-      if (authMode === 'register') await register(user, password)
-      const nextTokens = await login(user, password)
+      const nextTokens = authMode === 'register'
+        ? await register(user, password)
+        : await login(user, password)
       localStorage.setItem('access', nextTokens.access)
-      if (nextTokens.refresh) localStorage.setItem('refresh', nextTokens.refresh)
       setUsername(user)
       setTokens(nextTokens)
     } catch (reason) {
@@ -102,7 +101,6 @@ function App() {
       }
     }
     localStorage.removeItem('access')
-    localStorage.removeItem('refresh')
     setTokens(null)
     setUsername('')
     setMessages([])
@@ -158,7 +156,7 @@ function App() {
 
       <footer className="page-footer"><span>МАЛЕНЬКИЙ ЧАТ, БОЛЬШИЕ МЫСЛИ.</span><span>СДЕЛАНО ДЛЯ КОМАНДЫ <span className="footer-star">✳</span></span></footer>
 
-      {!tokens && <div className="auth-overlay"><div className="auth-card"><div className="auth-mark"><MessageCircle size={19} /></div><span className="eyebrow">ВАШЕ МЕСТО В КРУГУ</span><h2>{authMode === 'login' ? 'С возвращением.' : 'Рады знакомству.'}</h2><p className="auth-subtitle">{authMode === 'login' ? 'Войдите, чтобы быть на связи.' : 'Создайте аккаунт и присоединяйтесь.'}</p><form onSubmit={handleAuth}><label>Имя пользователя<input name="username" autoComplete="username" placeholder="например, anna" required minLength={3} /></label><label>Пароль<input name="password" type="password" autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} placeholder="Не короче 8 символов" required minLength={8} /></label>{error && <p className="auth-error">{error}</p>}<button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Минутку…' : authMode === 'login' ? 'Войти в чат' : 'Зарегистрироваться'}<ArrowUpRight size={16} /></button></form><div className="auth-switch"><span>{authMode === 'login' ? 'Впервые здесь?' : 'Уже есть аккаунт?'}</span><button onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError('') }}>{authMode === 'login' ? 'Создать аккаунт' : 'Войти'}</button></div><div className="auth-lock"><span>◈</span> Ваши сообщения видны участникам чата</div></div></div>}
+      {!tokens && <div className="auth-overlay"><div className="auth-card"><div className="auth-mark"><MessageCircle size={19} /></div><span className="eyebrow">ВАШЕ МЕСТО В КРУГУ</span><h2>{authMode === 'login' ? 'С возвращением.' : 'Рады знакомству.'}</h2><p className="auth-subtitle">{authMode === 'login' ? 'Войдите, чтобы быть на связи.' : 'Создайте аккаунт и присоединяйтесь.'}</p><form onSubmit={handleAuth}><label>Имя пользователя<input name="username" autoComplete="username" placeholder="например, anna" required minLength={1} maxLength={150} /></label><label>Пароль<input name="password" type="password" autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} placeholder="Не короче 6 символов" required minLength={6} /></label>{error && <p className="auth-error">{error}</p>}<button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Минутку…' : authMode === 'login' ? 'Войти в чат' : 'Зарегистрироваться'}<ArrowUpRight size={16} /></button></form><div className="auth-switch"><span>{authMode === 'login' ? 'Впервые здесь?' : 'Уже есть аккаунт?'}</span><button onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError('') }}>{authMode === 'login' ? 'Создать аккаунт' : 'Войти'}</button></div><div className="auth-lock"><span>◈</span> Ваши сообщения видны участникам чата</div></div></div>}
       {tokens && <button className="logout-button" onClick={logout}><LogOut size={15} /> Выйти</button>}
     </main>
   )
